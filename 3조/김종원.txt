@@ -1,0 +1,68 @@
+from sparklestock import Stock
+from collections import deque
+import matplotlib.pyplot as plt
+
+import time
+
+stock = Stock('http://3.34.181.14')
+stock.login('capella13','casl21331!!')
+
+plt.ion()
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
+
+x_data = deque(maxlen=500)
+y_data = deque(maxlen=500)
+p_c = deque(maxlen=5)
+m_data = deque(maxlen=500)
+t_data = deque(maxlen=500)
+
+my_asset = {}
+
+init_price = None
+
+b_p = []
+s_p = []
+
+while True:
+    my_asset = stock.check_my_asset()
+    price = stock.get_current_price()
+    current_time = time.time()
+
+    x_data.append(current_time)
+    y_data.append(price)
+    m_data.append(my_asset['money'] + (price * my_asset['stock']))
+    t_data.append(current_time)
+    p_c.append(price)
+
+    print(my_asset)
+    
+    if init_price is None:
+    
+        stock.buy_stock(my_asset['money'] / (price))
+        init_price = price
+        b_p.append((current_time, price))
+    
+    if len(p_c) == 5:
+        avg_r_c = sum(p_c) / len(p_c)
+
+        if price > avg_r_c and price > init_price:
+            
+            stock.buy_stock(my_asset['money'] / price)
+            init_price = price
+            b_p.append((current_time, price))
+
+        if price < avg_r_c and price < init_price:
+            
+            stock.sell_stock(my_asset['stock'])
+            init_price = price
+            s_p.append((current_time, price))
+
+    ax2.clear()
+    ax2.plot(t_data, m_data, label='Asset', color='green')
+    ax2.set_title('My Asset')
+    ax2.set_xlabel('Time')
+    ax2.set_ylabel('Asset')
+
+    fig.canvas.draw()
+    plt.pause(1)
+    time.sleep(1)
